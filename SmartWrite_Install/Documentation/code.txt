@@ -1,0 +1,650 @@
+
+// this is record from 20/04/01, 7_47PM:
+//Project name : SmartWrite.sln
+**************************************************************************** Main program
+// Program.cs:
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace SmartWrite
+{
+    static class Program
+    {
+        /// <summary>
+        /// The main entry point for the application.
+        /// </summary>
+        [STAThread]
+        static void Main()
+        {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Form1());
+        }
+    }
+}
+*****************************************************************************
+//Form1.cs:
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Reflection;
+
+namespace SmartWrite
+{
+    public partial class Form1 : Form
+    {
+// Declaration of the necessary classes 
+
+        public class participant 
+        {
+            // ID convention for four participants A through D -> A:1 B:2 C:3 D:4
+            private int ID; 
+            private int partnerID;
+            private int character; // coding the participant's charater
+            private int seat;
+            private int partnerMateScore; // keeping score of the mutual relationship (with the partner)
+
+			// public method for constructing (setting) the property values. That allows additional control to be added later. "get/set" determines the actual values
+            public participant(int aID, int aPartnerID, int aCharacter, int aSeat, int aPartnerMateScore)
+            {
+                cID = aID;
+                PartnerID = aPartnerID;
+                Character = aCharacter;
+                Seat = aSeat;
+                PartnerMateScore = aPartnerMateScore;
+            }
+
+            public int cID
+            {
+                get { return ID; }
+                set { ID = value; }
+            }
+
+            public int PartnerID
+            {
+                get { return partnerID; }
+                set { partnerID = value; }
+            }
+
+            public int Character
+            {
+                get { return character; }
+                set { character = value; }
+            }
+
+            public int Seat
+            {
+                get { return seat; }
+                set { seat = value; }
+            }
+
+            public int PartnerMateScore
+            {
+                get { return partnerMateScore; }
+                set { partnerMateScore = value; }
+            }
+        }
+
+        public class booth 
+        {
+            private int boothNum;
+            private int seatLeftID;
+            private int seatRightID;
+			
+// A constructor setting the property values through a public method
+            public booth(int aBoothNum, int aSeatLeftID, int aSeatRightID)
+            {
+                BoothNum = aBoothNum;
+                SeatLeftID = aSeatLeftID;
+                SeatRightID = aSeatRightID;
+            }
+
+            public int BoothNum
+            {
+                get { return boothNum; }
+                set { boothNum = value; }
+            }
+
+            public int SeatLeftID
+            {
+                get { return seatLeftID; }
+                set { seatLeftID = value; }
+            }
+
+            public int SeatRightID
+            {
+                get { return seatRightID; }
+                set { seatRightID = value; }
+            }
+
+			// A method to determine if "mating" occurs between the characters sitting in the booth. It incorporates the rule-set of the "game".
+            public int IsMate(int LeftID_chr, int RightID_chr) 
+            {
+                if (Math.Abs(LeftID_chr - RightID_chr) <= 2 && LeftID_chr != 0 && RightID_chr != 0) 
+                {
+                    if (LeftID_chr == 5 && RightID_chr == 5)
+                    {
+                        return 4; // partnerMateScore for both partners will be set to 4
+                    }
+
+                    else if (LeftID_chr >= 4 && RightID_chr >= 4 && Math.Abs(LeftID_chr - RightID_chr) == 1)
+                    {
+                        return 3; // partnerMateScore for both partners will be set to 3
+                    }
+
+                    else if (LeftID_chr == 4 && RightID_chr == 4)
+                    {
+                        return 2; // partnerMateScore for both partners will be set to 2
+                    }
+
+                    else if (LeftID_chr == 3 && RightID_chr == 4 || LeftID_chr == 4 && RightID_chr == 3)
+                    {
+                        return 1; // partnerMateScore for both partners will be set to 1
+                    }
+
+                    else if (LeftID_chr == 3 && RightID_chr == 3)
+                    {
+                        return 4; // partnerMateScore for both partners will be set to 4
+                    }
+
+                    else if (LeftID_chr >= 3 && RightID_chr >= 3 && Math.Abs(LeftID_chr - RightID_chr) == 2)
+                    {
+                        return 2; // partnerMateScore for both partners will be set to 2
+                    }
+
+                    else if (LeftID_chr == 2 && RightID_chr == 2)
+                    {
+                        return 2; // partnerMateScore for both partners will be set to 2
+                    }
+
+                    else if (LeftID_chr == 2 && RightID_chr == 4 || LeftID_chr == 4 && RightID_chr == 2)
+                    {
+                        return 1; // partnerMateScore for both partners will be set to 1
+                    }
+
+                    else if (LeftID_chr == 1 && RightID_chr == 1)
+                    {
+                        return 4; // partnerMateScore for both partners will be set to 4
+                    }
+
+                    else { return 0; }
+                }
+                else { return 0; }
+            }
+
+        }
+
+// Generating a list of four values. Its order determines which participant is sitting in what booth. This way participants' seats are assigned randomly.
+        public static List<int> GetRandomNumbers(int count)
+        {
+            Random random = new Random();
+            List<int> randomNumbers = new List<int>();
+
+            for (int i = 0; i < count; i++)
+            {
+                int number;
+
+                do number = random.Next(1, 5);
+                while (randomNumbers.Contains(number));
+
+                randomNumbers.Add(number);
+            }
+
+            return randomNumbers;
+        }
+
+        public Form1()
+        {
+            InitializeComponent();
+        }
+		
+// The actual program is inside the click event of the "Run" button. 
+        private void btnRun_Click(object sender, EventArgs e)
+        {
+         
+            // check if any input is missing 
+            if (comBoxAA.Text == "" || comBoxAB.Text == "" || comBoxAC.Text == "" || comBoxAD.Text == "" || comBoxBB.Text == "" || comBoxBC.Text == "" || comBoxBD.Text == "" || comBoxCC.Text == "" || comBoxCD.Text == "" || comBoxDD.Text == "")
+            { txtBoxDrama.Text = "Please select all input AA through DD boxes"; }
+
+            else
+            // all input is present and the program starts
+            // set number of participants and calculate number of booths they take. Note that this first program version assumes fixed number of four participants.  
+            {
+                int numParticipants = 4;
+                int numBooths = (int)Math.Ceiling((double)numParticipants / 2);
+				
+                // compute the initial mate score by taking off-diagonal elements of input, sum them up and display in the text box for initial value on the front panel
+                // an element such as (comBoxAB.Text[0] - '0') is integer value, because each character is internally represented by a number
+                txtBoxInit.Text = ((comBoxAB.Text[0] - '0') + (comBoxAC.Text[0] - '0') + (comBoxAD.Text[0] - '0') + (comBoxBC.Text[0] - '0') + (comBoxBD.Text[0] - '0') + (comBoxCD.Text[0] - '0')).ToString(); // convert the sum to string to display
+
+				// Each participant becomes an object. Their "characters" are taken from the user input.
+                participant A = new participant(1, 0, comBoxAA.Text[0] - '0', 0, 0);
+                participant B = new participant(2, 0, comBoxBB.Text[0] - '0', 0, 0);
+                participant C = new participant(3, 0, comBoxCC.Text[0] - '0', 0, 0);
+                participant D = new participant(4, 0, comBoxDD.Text[0] - '0', 0, 0);
+
+				// Initializes the test monitor at the right hand side of the front panel
+                Monitor1.Text = "A properties list for each pearticipant : ";
+
+                Monitor1.AppendText(Environment.NewLine + " *************** " + Environment.NewLine + "Participant A : ");
+                var typeA = A.GetType();
+                foreach (var prop in typeA.GetProperties())
+                {
+                    Monitor1.AppendText(Environment.NewLine + prop.Name + " = " + prop.GetValue(A));
+                }
+
+                Monitor1.AppendText(Environment.NewLine + " *************** " + Environment.NewLine + "Participant B : ");
+                var typeB = B.GetType();
+                foreach (var prop in typeB.GetProperties())
+                {
+                    Monitor1.AppendText(Environment.NewLine + prop.Name + " = " + prop.GetValue(B));
+                }
+
+                Monitor1.AppendText(Environment.NewLine + " *************** " + Environment.NewLine + "Participant C : ");
+                var typeC = C.GetType();
+                foreach (var prop in typeC.GetProperties())
+                {
+                    Monitor1.AppendText(Environment.NewLine + prop.Name + " = " + prop.GetValue(C));
+                }
+
+                Monitor1.AppendText(Environment.NewLine + " *************** " + Environment.NewLine + "Participant D : ");
+                var typeD = D.GetType();
+                foreach (var prop in typeD.GetProperties())
+                {
+                    Monitor1.AppendText(Environment.NewLine + prop.Name + " = " + prop.GetValue(D));
+                }
+				
+				// Generate the four random seats for the participants. 
+                string output = string.Join("", GetRandomNumbers(4).ToArray());
+                Monitor1.AppendText(Environment.NewLine + output);
+
+				// The seat orser determines who is sitting where
+                int b1_LeftID = Convert.ToInt32(output[0] - '0');
+                int b1_RightID = Convert.ToInt32(output[1] - '0');
+                int b2_LeftID = Convert.ToInt32(output[2] - '0');
+                int b2_RightID = Convert.ToInt32(output[3] - '0');
+
+                booth b1 = new booth(1, b1_LeftID, b1_RightID);
+                booth b2 = new booth(2, b2_LeftID, b2_RightID);
+
+                var type_b1 = b1.GetType();
+                foreach (var prop in type_b1.GetProperties())
+                {
+                    Monitor1.AppendText(Environment.NewLine + prop.Name + " = " + prop.GetValue(b1));
+                }
+
+                var type_b2 = b2.GetType();
+                foreach (var prop in type_b2.GetProperties())
+                {
+                    Monitor1.AppendText(Environment.NewLine + prop.Name + " = " + prop.GetValue(b2));
+                }
+
+				// Need to make containers for each participnat's character for simpler access to these
+                int b1_LeftID_char;
+                int b1_RightID_char;
+                int b2_LeftID_char;
+                int b2_RightID_char;
+
+                // find character of b1_LeftID
+                switch (b1_LeftID)
+                {
+                    case 1:
+                        b1_LeftID_char = A.Character;
+                        A.Seat = 1;
+                        A.PartnerID = b1_RightID;
+                        break;
+                    case 2:
+                        b1_LeftID_char = B.Character;
+                        B.Seat = 1;
+                        B.PartnerID = b1_RightID;
+                        break;
+                    case 3:
+                        b1_LeftID_char = C.Character;
+                        C.Seat = 1;
+                        C.PartnerID = b1_RightID;
+                        break;
+                    default:
+                        b1_LeftID_char = D.Character;
+                        D.Seat = 1;
+                        D.PartnerID = b1_RightID;
+                        break;
+                }
+
+                // find character of b1_RightID
+                switch (b1_RightID)
+                {
+                    case 1:
+                        b1_RightID_char = A.Character;
+                        A.Seat = 2;
+                        A.PartnerID = b1_LeftID;
+                        break;
+                    case 2:
+                        b1_RightID_char = B.Character;
+                        B.Seat = 2;
+                        B.PartnerID = b1_LeftID;
+                        break;
+                    case 3:
+                        b1_RightID_char = C.Character;
+                        C.Seat = 2;
+                        C.PartnerID = b1_LeftID;
+                        break;
+                    default:
+                        b1_RightID_char = D.Character;
+                        D.Seat = 2;
+                        D.PartnerID = b1_LeftID;
+                        break;
+                }
+
+                // find character of b2_LeftID
+                switch (b2_LeftID)
+                {
+                    case 1:
+                        b2_LeftID_char = A.Character;
+                        A.Seat = 3;
+                        A.PartnerID = b2_RightID;
+                        break;
+                    case 2:
+                        b2_LeftID_char = B.Character;
+                        B.Seat = 3;
+                        B.PartnerID = b2_RightID;
+                        break;
+                    case 3:
+                        b2_LeftID_char = C.Character;
+                        C.Seat = 3;
+                        C.PartnerID = b2_RightID;
+                        break;
+                    default:
+                        b2_LeftID_char = D.Character;
+                        D.Seat = 3;
+                        D.PartnerID = b2_RightID;
+                        break;
+                }
+
+				// find character of b2_RightID
+                switch (b2_RightID)
+                {
+                    case 1:
+                        b2_RightID_char = A.Character;
+                        A.Seat = 4;
+                        A.PartnerID = b2_LeftID;
+                        break;
+                    case 2:
+                        b2_RightID_char = B.Character;
+                        B.Seat = 4;
+                        B.PartnerID = b2_LeftID;
+                        break;
+                    case 3:
+                        b2_RightID_char = C.Character;
+                        C.Seat = 4;
+                        C.PartnerID = b2_LeftID;
+                        break;
+                    default:
+                        b2_RightID_char = D.Character;
+                        D.Seat = 4;
+                        D.PartnerID = b2_LeftID;
+                        break;
+                }
+
+				// find participants' "mating" score from meeting in booth1
+                int b1_IsMate = b1.IsMate(b1_LeftID_char, b1_RightID_char);
+                if (b1_IsMate != 0)
+				
+				// Update property "PartnerMating Score" for each participant to the mating result from the meeting
+                {
+                    switch (b1_LeftID)
+                    {
+                        case 1:
+                            A.PartnerMateScore = b1_IsMate;
+                            break;
+                        case 2:
+                            B.PartnerMateScore = b1_IsMate;
+                            break;
+                        case 3:
+                            C.PartnerMateScore = b1_IsMate;
+                            break;
+                        default:
+                            D.PartnerMateScore = b1_IsMate;
+                            break;
+                    }
+
+                    switch (b1_RightID)
+                    {
+                        case 1:
+                            A.PartnerMateScore = b1_IsMate;
+                            break;
+                        case 2:
+                            B.PartnerMateScore = b1_IsMate;
+                            break;
+                        case 3:
+                            C.PartnerMateScore = b1_IsMate;
+                            break;
+                        default:
+                            D.PartnerMateScore = b1_IsMate;
+                            break;
+                    }
+                }
+
+				// find participants' "mating" score from meeting in booth2
+                int b2_IsMate = b2.IsMate(b2_LeftID_char, b2_RightID_char);
+                if (b2_IsMate != 0) 
+                {
+                    switch (b2_LeftID)
+                    {
+                        case 1:
+                            A.PartnerMateScore = b2_IsMate;
+                            break;
+                        case 2:
+                            B.PartnerMateScore = b2_IsMate;
+                            break;
+                        case 3:
+                            C.PartnerMateScore = b2_IsMate;
+                            break;
+                        default:
+                            D.PartnerMateScore = b2_IsMate;
+                            break;
+                    }
+
+                    switch (b2_RightID)
+                    {
+                        case 1:
+                            A.PartnerMateScore = b2_IsMate;
+                            break;
+                        case 2:
+                            B.PartnerMateScore = b2_IsMate;
+                            break;
+                        case 3:
+                            C.PartnerMateScore = b2_IsMate;
+                            break;
+                        default:
+                            D.PartnerMateScore = b2_IsMate;
+                            break;
+                    }
+                }
+
+				// Send the resulted "mating" from the meeting to the test monitor at the right hand side of the front panel. 
+                Monitor1.AppendText(Environment.NewLine + b1_IsMate + Environment.NewLine + b2_IsMate);
+
+				// Send each participnats' propert values to the test monitor
+                Monitor1.AppendText(Environment.NewLine + "A properties list for each pearticipant after Mating : ");
+
+                Monitor1.AppendText(Environment.NewLine + " *************** " + Environment.NewLine + "Participant A : ");
+                var typeAmated = A.GetType();
+                foreach (var prop in typeAmated.GetProperties())
+                {
+                    Monitor1.AppendText(Environment.NewLine + prop.Name + " = " + prop.GetValue(A));
+                }
+
+                Monitor1.AppendText(Environment.NewLine + " *************** " + Environment.NewLine + "Participant B : ");
+                var typeBmated = B.GetType();
+                foreach (var prop in typeBmated.GetProperties())
+                {
+                    Monitor1.AppendText(Environment.NewLine + prop.Name + " = " + prop.GetValue(B));
+                }
+
+                Monitor1.AppendText(Environment.NewLine + " *************** " + Environment.NewLine + "Participant C : ");
+                var typeCmated = C.GetType();
+                foreach (var prop in typeCmated.GetProperties())
+                {
+                    Monitor1.AppendText(Environment.NewLine + prop.Name + " = " + prop.GetValue(C));
+                }
+
+                Monitor1.AppendText(Environment.NewLine + " *************** " + Environment.NewLine + "Participant D : ");
+                var typeDmated = D.GetType();
+                foreach (var prop in typeDmated.GetProperties())
+                {
+                    Monitor1.AppendText(Environment.NewLine + prop.Name + " = " + prop.GetValue(D));
+                }
+
+				// Initializing the input text boxes colors
+                comBoxAB.BackColor = Color.White;
+                comBoxAB.ForeColor = Color.Black;
+
+                comBoxAC.BackColor = Color.White;
+                comBoxAC.ForeColor = Color.Black;
+
+                comBoxAD.BackColor = Color.White;
+                comBoxAD.ForeColor = Color.Black;
+
+                comBoxBC.BackColor = Color.White;
+                comBoxBC.ForeColor = Color.Black;
+
+                comBoxBD.BackColor = Color.White;
+                comBoxBD.ForeColor = Color.Black;
+
+                comBoxCD.BackColor = Color.White;
+                comBoxCD.ForeColor = Color.Black;
+				
+                // A structure for updating the fron panel displays whose color changes if "mating" has occured
+				
+				// Check if "mating" has happened in booth1.
+                if (b1_IsMate != 0)
+                {
+                    if (b1_LeftID == 1 && b1_RightID == 2 || b1_LeftID == 2 && b1_RightID == 1)
+                    {
+                        comBoxAB.Text = (Convert.ToInt32(comBoxAB.Text[0] - '0') + A.PartnerMateScore).ToString();
+                        if (comBoxAB.BackColor == Color.White)
+                        { comBoxAB.BackColor = Color.Red;
+                          comBoxAB.ForeColor = Color.White;}
+
+                    }
+
+                    if (b1_LeftID == 1 && b1_RightID == 3 || b1_LeftID == 3 && b1_RightID == 1) 
+                    {
+                        comBoxAC.Text = (Convert.ToInt32(comBoxAC.Text[0] - '0') + A.PartnerMateScore).ToString();
+                        if (comBoxAC.BackColor == Color.White)
+                        { comBoxAC.BackColor = Color.Red;
+                          comBoxAC.ForeColor = Color.White;}
+
+                    }
+
+                    if (b1_LeftID == 1 && b1_RightID == 4 || b1_LeftID == 4 && b1_RightID == 1) 
+                    {
+                        comBoxAD.Text = (Convert.ToInt32(comBoxAD.Text[0] - '0') + A.PartnerMateScore).ToString();
+                        if (comBoxAD.BackColor == Color.White)
+                        { comBoxAD.BackColor = Color.Red;
+                          comBoxAD.ForeColor = Color.White;}
+
+                    }
+                    // check comBoxBC whether is affected by booth1 mating
+                    if (b1_LeftID == 2 && b1_RightID == 3 || b1_LeftID == 3 && b1_RightID == 2)
+                    {
+                        comBoxBC.Text = (Convert.ToInt32(comBoxBC.Text[0] - '0') + B.PartnerMateScore).ToString();
+                        if (comBoxBC.BackColor == Color.White)
+                        { comBoxBC.BackColor = Color.Red;
+                          comBoxBC.ForeColor = Color.White;}
+
+                    }
+                    // check comBoxBD whether is affected by booth1 mating
+                    if (b1_LeftID == 2 && b1_RightID == 4 || b1_LeftID == 4 && b1_RightID == 2)
+                    {
+                        comBoxBD.Text = (Convert.ToInt32(comBoxBD.Text[0] - '0') + B.PartnerMateScore).ToString();
+                        if (comBoxBD.BackColor == Color.White)
+                        { comBoxBD.BackColor = Color.Red;
+                          comBoxBD.ForeColor = Color.White;}
+
+                    }
+                    // check comBoxCD whether is affected by booth1 mating
+                    if (b1_LeftID == 3 && b1_RightID == 4 || b1_LeftID == 4 && b1_RightID == 3)
+                    {
+                        comBoxCD.Text = (Convert.ToInt32(comBoxCD.Text[0] - '0') + C.PartnerMateScore).ToString();
+                        if (comBoxCD.BackColor == Color.White)
+                        { comBoxCD.BackColor = Color.Red;
+                          comBoxCD.ForeColor = Color.White;}
+
+                    }
+                }
+				
+				// Check if "mating" has happened in booth2 
+                if (b2_IsMate != 0)
+                {
+                    if (b2_LeftID == 1 && b2_RightID == 2 || b2_LeftID == 2 && b2_RightID == 1)
+                    {
+                        comBoxAB.Text = (Convert.ToInt32(comBoxAB.Text[0] - '0') + A.PartnerMateScore).ToString();
+                        if (comBoxAB.BackColor == Color.White)
+                        { comBoxAB.BackColor = Color.Red;
+                          comBoxAB.ForeColor = Color.White;}
+                    }
+
+                    if (b2_LeftID == 1 && b2_RightID == 3 || b2_LeftID == 3 && b2_RightID == 1)
+                    {
+                        comBoxAC.Text = (Convert.ToInt32(comBoxAC.Text[0] - '0') + A.PartnerMateScore).ToString();
+                        if (comBoxAC.BackColor == Color.White)
+                        { comBoxAC.BackColor = Color.Red;
+                          comBoxAC.ForeColor = Color.White;}
+
+                    }
+
+                    if (b2_LeftID == 1 && b2_RightID == 4 || b2_LeftID == 4 && b2_RightID == 1)
+                    {
+                        comBoxAD.Text = (Convert.ToInt32(comBoxAD.Text[0] - '0') + A.PartnerMateScore).ToString();
+                        if (comBoxAD.BackColor == Color.White)
+                        { comBoxAD.BackColor = Color.Red;
+                          comBoxAD.ForeColor = Color.White;}
+
+                    }
+                    // check comBoxBC whether is affected by booth2 mating
+                    if (b2_LeftID == 2 && b2_RightID == 3 || b2_LeftID == 3 && b2_RightID == 2)
+                    {
+                        comBoxBC.Text = (Convert.ToInt32(comBoxBC.Text[0] - '0') + B.PartnerMateScore).ToString();
+                        if (comBoxBC.BackColor == Color.White)
+                        { comBoxBC.BackColor = Color.Red;
+                          comBoxBC.ForeColor = Color.White;}
+
+                    }
+                    // check comBoxBD whether is affected by booth2 mating
+                    if (b2_LeftID == 2 && b2_RightID == 4 || b2_LeftID == 4 && b2_RightID == 2)
+                    {
+                        comBoxBD.Text = (Convert.ToInt32(comBoxBD.Text[0] - '0') + B.PartnerMateScore).ToString();
+                        if (comBoxBD.BackColor == Color.White)
+                        { comBoxBD.BackColor = Color.Red;
+                          comBoxBD.ForeColor = Color.White;}
+
+                    }
+                    // check comBoxCD whether is affected by booth2 mating
+                    if (b2_LeftID == 3 && b2_RightID == 4 || b2_LeftID == 4 && b2_RightID == 3)
+                    {
+                        comBoxCD.Text = (Convert.ToInt32(comBoxCD.Text[0] - '0') + C.PartnerMateScore).ToString();
+                        if (comBoxCD.BackColor == Color.White)
+                        { comBoxCD.BackColor = Color.Red;
+                          comBoxCD.ForeColor = Color.White;}
+
+                    }
+                }
+
+                // display the final result as Drama Level. The "more mating" (changing participants' states) has occured in the two booths, the "more drama has happened". 
+
+                txtBoxDrama.Text = (b1_IsMate + b2_IsMate).ToString() + ".   Please select your input again !";
+            }
+
+        }
+    }
+}
